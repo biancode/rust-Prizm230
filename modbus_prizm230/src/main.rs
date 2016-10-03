@@ -8,11 +8,6 @@ use modbus::{Client, Coil};
 use modbus::tcp;
 use clap::App;
 
-use std::io;
-use std::time::Duration;
-
-use serial::prelude::*;
-
 fn main() {
 	
   let matches = App::new("client")
@@ -20,8 +15,6 @@ fn main() {
       .version(&crate_version!()[..])
       .about("Modbus Tcp client")
       .args_from_usage("<SERVER> 'The IP address or hostname of the server'
-                      \
-                        <COM> 'The COM port to send one value by serial'
                       \
                         --read-coils=[ADDR] [QUANTITY] 'Read QUANTITY coils from ADDR'
                       \
@@ -46,6 +39,8 @@ fn main() {
                         values to ADDR (use \"..\" to group them e.g. \"23, 24, 25\")'")
       .get_matches();
 
+  let server_addr = matches.value_of("SERVER").unwrap();
+  
   let mut client = tcp::Transport::new(matches.value_of("SERVER").unwrap()).unwrap();
 
   if let Some(args) = matches.values_of("read-coils") {
@@ -92,16 +87,15 @@ fn main() {
       let results = client.read_holding_registers(addr, qtty).expect("IO Error");
 
     if qtty == 1 {
-      println!("{:?}, {:?}", time::strftime("%Y-%m-%d %H:%M:%S %Z", &time::now()).unwrap(), results[0]);
-
-      /*
-      let mut port = serial::open(matches.value_of("COM").unwrap()).unwrap();
-      let result = results[0];
-      interact(&mut port, &mut [result as u8, (result >> 8) as u8]).unwrap();
-      */
-
+      println!("{:?};{:?};{:?}", time::strftime("%Y-%m-%d %H:%M:%S %Z", &time::now()).unwrap(), results[0], server_addr);
     } else {
-      println!("{:?}, {:?}", time::strftime("%Y-%m-%d %H:%M:%S %Z", &time::now()).unwrap(), results);
+      print!("{:?};", time::strftime("%Y-%m-%d %H:%M:%S %Z", &time::now()).unwrap());
+
+      for value in results {
+        print!("{:?};", value);
+      }
+
+      println!("{:?}", server_addr);
     }        
   }
   else if let Some(args) = matches.values_of("write-single-register") {
@@ -123,24 +117,4 @@ fn main() {
       
       client.write_multiple_registers(addr, &values).expect("IO Error");
   }
-}
-
-fn interact<T: SerialPort>(port: &mut T, values: &mut [u8]) -> io::Result<()> {
-    try!(port.reconfigure(&|settings| {
-        try!(settings.set_baud_rate(serial::Baud115200));
-        settings.set_char_size(serial::Bits8);
-        settings.set_parity(serial::ParityNone);
-        settings.set_stop_bits(serial::Stop1);
-        settings.set_flow_control(serial::FlowNone);
-        Ok(())
-    }));
-
-    try!(port.set_timeout(Duration::from_millis(5000)));
-
-    let mut buf: Vec<u8> = (0..255).collect();
-
-    try!(port.write(&values));
-    try!(port.read(&mut buf[..]));
-
-    Ok(())
 }
