@@ -1,0 +1,15 @@
+[package]
+name = "modbus_prizm230"
+version = "0.1.0"
+authors = ["Klaus Landsdorf <klaus.landsdorf@bianco-royal.de>"]
+repository = "https://github.com/biancode/rust-Prizm230.git"
+license = "Apache 2.0"
+description = "Pure Rust modbus implementation for renu PRIZM-230"
+keywords = ["modbus", "hardware", "prizm", "renu"]
+
+[dependencies]
+modbus = "0.4"
+clap = "2.13"
+time = "0.1"
+rustfmt = "0.6"
+serial = "0.3"
